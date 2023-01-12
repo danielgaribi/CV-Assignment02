@@ -8,6 +8,31 @@ class Solution:
         pass
 
     @staticmethod
+    def calc_ssdd(left_image: np.ndarray,
+                  right_image: np.ndarray,
+                  win_size: int,
+                  dsp_range: int,
+                  row: int,
+                  col: int,
+                  d: int) -> int:
+        num_of_rows, num_of_cols = left_image.shape[0], left_image.shape[1]
+        diparity = d - dsp_range
+
+        left_min_row = row - win_size//2
+        left_max_row = row + win_size//2
+        left_min_col = col - win_size//2
+        left_max_col = col + win_size//2
+
+        right_min_row = row - win_size//2
+        right_max_row = row + win_size//2
+        right_min_col = dsp_range + col - win_size//2 + diparity
+        right_max_col = dsp_range + col + win_size//2 + diparity
+
+        return np.sum((left_image[left_min_row:left_max_row+1, left_min_col:left_max_col+1] -
+                right_image[right_min_row:right_max_row+1, right_min_col:right_max_col+1] ) ** 2)
+
+
+    @staticmethod
     def ssd_distance(left_image: np.ndarray,
                      right_image: np.ndarray,
                      win_size: int,
@@ -33,6 +58,14 @@ class Solution:
                                 num_of_cols,
                                 len(disparity_values)))
         """INSERT YOUR CODE HERE"""
+        left_image_pad = np.pad(left_image, ((win_size//2, win_size//2), (win_size//2, win_size//2), (0,0)) , mode='constant')
+        right_image_pad = np.pad(right_image, ((win_size//2, win_size//2), (win_size//2+dsp_range, win_size//2+dsp_range), (0,0)) , mode='constant')
+        for row in range(win_size//2, num_of_rows+win_size//2):
+            for col in range(win_size//2, num_of_cols+win_size//2):
+                for d in range(dsp_range * 2 + 1):
+                    ssdd_tensor[row-win_size//2, col-win_size//2, d] = Solution.calc_ssdd(left_image_pad, right_image_pad, win_size,
+                                                                  dsp_range, row, col, d)
+
         ssdd_tensor -= ssdd_tensor.min()
         ssdd_tensor /= ssdd_tensor.max()
         ssdd_tensor *= 255.0
@@ -57,6 +90,7 @@ class Solution:
         # you can erase the label_no_smooth initialization.
         label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]))
         """INSERT YOUR CODE HERE"""
+        label_no_smooth = ssdd_tensor.argmin(2)
         return label_no_smooth
 
     @staticmethod
