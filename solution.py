@@ -112,6 +112,16 @@ class Solution:
         num_labels, num_of_cols = c_slice.shape[0], c_slice.shape[1]
         l_slice = np.zeros((num_labels, num_of_cols))
         """INSERT YOUR CODE HERE"""
+        l_slice[:, 0] = c_slice[:, 0]
+        for c in range(1, num_of_cols):
+            for d in range(num_labels):
+                l_slice[d, c] = c_slice[d, c]
+                min_p1_pen = min([l_slice[d+i, c-1] for i in [1, -1] if 0<=d+i<num_labels])
+                min_p2_pen = min([l_slice[d+k, c-1] for k in range(-num_labels, num_labels+1) if 0<=d+k<num_labels and abs(k)>=2])
+                l_slice[d, c] += min(l_slice[d, c-1],
+                                     p1 + min_p1_pen,
+                                     p2 + min_p2_pen)
+                l_slice[d, c] -= min([l_slice[d_prev, c-1] for d_prev in range(num_labels)])
         return l_slice
 
     def dp_labeling(self,
@@ -137,6 +147,8 @@ class Solution:
         """
         l = np.zeros_like(ssdd_tensor)
         """INSERT YOUR CODE HERE"""
+        for i, l_slice in enumerate(ssdd_tensor):
+            l[i, :, :] = self.dp_grade_slice(l_slice.T, p1, p2).T
         return self.naive_labeling(l)
 
     def dp_labeling_per_direction(self,
