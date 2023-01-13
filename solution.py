@@ -151,6 +151,74 @@ class Solution:
             l[i, :, :] = self.dp_grade_slice(l_slice.T, p1, p2).T
         return self.naive_labeling(l)
 
+
+    def extract_ssdd_slice(self,
+                           ssdd_tensor: np.ndarray,
+                           row: int,
+                           col: int,
+                           offset: int,
+                           direction: int):
+        nof_rows, nof_cols, _ = ssdd_tensor.shape
+        # if direction == 1:
+        #     return ssdd_tensor[row, :col, :]
+        # elif direction == 2:
+        #     offset = col-row
+        #     return ssdd_tensor.diagonal(offset).T[:row if offset>=0 else row+offset, :]
+        # elif direction == 3:
+        #     return ssdd_tensor[:row, col, :]
+        # elif direction == 4:
+        #     offset = (nof_col-col-1)-row
+        #     return np.fliplr(ssdd_tensor).diagonal(offset).T[:row if offset>=0 else row+offset, :]
+        # elif direction == 5:
+        #     return np.flip(ssdd_tensor[row, col+1:, :], axis=0)
+        # elif direction == 6:
+        #     offset = col - row
+        #     return np.flip(ssdd_tensor.diagonal(offset).T[(row if offset>=0 else row+offset)+1:, :], axis=0)
+        # elif direction == 7:
+        #     return np.flip(ssdd_tensor[row+1:, col, :], axis=0)
+        # elif direction == 8:
+        #     offset = (nof_col - col - 1) - row
+        #     return np.flip(np.fliplr(ssdd_tensor).diagonal(offset).T[(row if offset>=0 else row+offset)+1:, :], axis=0)
+
+        rows = np.arange(0, nof_rows)
+        cols = np.arange(0, nof_cols)
+        cols, rows = np.meshgrid(cols, rows)
+
+        if direction == 1:
+            return ssdd_tensor[row, :, :],\
+                   rows[row, :],\
+                   cols[row, :]
+        elif direction == 2:
+            return ssdd_tensor.diagonal(offset).T[:, :],\
+                   rows.diagonal(offset).T[:],\
+                   cols.diagonal(offset).T[:]
+        elif direction == 3:
+            return ssdd_tensor[:, col, :],\
+                   rows[:, col],\
+                   cols[:, col]
+        elif direction == 4:
+            return np.fliplr(ssdd_tensor).diagonal(offset).T[:, :],\
+                   np.fliplr(rows).diagonal(offset).T[:],\
+                   np.fliplr(cols).diagonal(offset).T[:]
+        elif direction == 5:
+            return np.flip(ssdd_tensor[row, :, :], axis=0),\
+                   np.flip(rows[row, :], axis=0),\
+                   np.flip(cols[row, :], axis=0)
+        elif direction == 6:
+            return np.flip(ssdd_tensor.diagonal(offset).T[:, :], axis=0),\
+                   np.flip(rows.diagonal(offset).T[:], axis=0),\
+                   np.flip(cols.diagonal(offset).T[:], axis=0)
+        elif direction == 7:
+            return np.flip(ssdd_tensor[:, col, :], axis=0),\
+                   np.flip(rows[:, col], axis=0),\
+                   np.flip(cols[:, col], axis=0)
+        elif direction == 8:
+            return np.flip(np.fliplr(ssdd_tensor).diagonal(offset).T[:, :], axis=0),\
+                   np.flip(np.fliplr(rows).diagonal(offset).T[:], axis=0),\
+                   np.flip(np.fliplr(cols).diagonal(offset).T[:], axis=0)
+        else:
+            raise ValueError("Invalid direction")
+
     def dp_labeling_per_direction(self,
                                   ssdd_tensor: np.ndarray,
                                   p1: float,
@@ -183,6 +251,22 @@ class Solution:
         l = np.zeros_like(ssdd_tensor)
         direction_to_slice = {}
         """INSERT YOUR CODE HERE"""
+        nof_rows, nof_cols, _ = ssdd_tensor.shape
+        ls = {direction: np.zeros_like(ssdd_tensor) for direction in range(1, num_of_directions+1)}
+        row = 0
+        col = 0
+        for i in range(nof_rows+nof_cols-1):
+            for direction in range(1, num_of_directions+1):
+                offset = -(nof_rows-1) + row + col
+                slices, rows, cols = self.extract_ssdd_slice(ssdd_tensor, row, col, offset, direction)
+                ls[direction][rows, cols, :] = self.dp_grade_slice(slices.T, p1, p2).T
+            if row < nof_rows-1:
+                row += 1
+            else:
+                col += 1
+
+        direction_to_slice = {direction: self.naive_labeling(ls[direction]) for direction in range(1, num_of_directions+1)}
+
         return direction_to_slice
 
     def sgm_labeling(self, ssdd_tensor: np.ndarray, p1: float, p2: float):
