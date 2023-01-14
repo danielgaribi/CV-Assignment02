@@ -110,18 +110,15 @@ class Solution:
             score of the best route.
         """
         num_labels, num_of_cols = c_slice.shape[0], c_slice.shape[1]
-        l_slice = np.zeros((num_labels, num_of_cols))
         """INSERT YOUR CODE HERE"""
-        l_slice[:, 0] = c_slice[:, 0]
+        l_slice = np.copy(c_slice)
         for c in range(1, num_of_cols):
+            min_prev_col = min([l_slice[d_prev, c-1] for d_prev in range(num_labels)])
             for d in range(num_labels):
-                l_slice[d, c] = c_slice[d, c]
-                min_p1_pen = min([l_slice[d+i, c-1] for i in [1, -1] if 0<=d+i<num_labels])
-                min_p2_pen = min([l_slice[d+k, c-1] for k in range(-num_labels, num_labels+1) if 0<=d+k<num_labels and abs(k)>=2])
                 l_slice[d, c] += min(l_slice[d, c-1],
-                                     p1 + min_p1_pen,
-                                     p2 + min_p2_pen)
-                l_slice[d, c] -= min([l_slice[d_prev, c-1] for d_prev in range(num_labels)])
+                                     p1 + min([l_slice[d+i, c-1] for i in [1, -1] if 0<=d+i<num_labels]),
+                                     p2 + min([l_slice[d+k, c-1] for k in range(-d, num_labels-d) if abs(k)>=2]))\
+                                 - min_prev_col
         return l_slice
 
     def dp_labeling(self,
